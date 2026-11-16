@@ -25,6 +25,13 @@ def test_remove_redistributes_proportionally():
     assert sh.after_remove([100], 0) == []
 
 
+def test_equal_stays_equal_after_remove():
+    # 34/33/33 без любого оффера → ровно 50/50, а не 51/49
+    for i in range(3):
+        assert sh.after_remove([34, 33, 33], i) == [50, 50]
+    assert sh.after_remove([20, 20, 20, 20, 20], 4) == [25, 25, 25, 25]
+
+
 def test_zero_shares_fallback():
     assert sh.after_add([0, 0]) == [34, 33, 33]
     assert sum(sh.normalize([0, 0, 0])) == 100

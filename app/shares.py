@@ -6,6 +6,8 @@ Keitaro требует, чтобы доли (share) активных оффер�
 * добавление оффера — новый получает 100/n, остальные пропорционально
   ужимаются (если доли были равными, получится снова равное деление);
 * удаление — освободившаяся доля раздаётся оставшимся пропорционально;
+* если доли были равными (34/33/33 и т.п.), после изменения они снова
+  делятся поровну — без «хвостов» от округления вроде 51/49;
 * округление — методом наибольшего остатка, сумма всегда ровно 100.
 """
 
@@ -35,10 +37,15 @@ def equal(n: int) -> list[int]:
     return largest_remainder([1.0] * n)
 
 
+def is_equal(shares: list[int]) -> bool:
+    """Доли равные с точностью до округления (напр. 34/33/33)."""
+    return bool(shares) and sum(shares) == TOTAL and shares == equal(len(shares))
+
+
 def after_add(shares: list[int]) -> list[int]:
     """Доли после добавления нового оффера в конец списка."""
     n = len(shares) + 1
-    if not shares or sum(shares) <= 0:
+    if not shares or sum(shares) <= 0 or is_equal(shares):
         return equal(n)
     scale = (n - 1) / n
     k = sum(shares)
@@ -51,6 +58,8 @@ def after_remove(shares: list[int], index: int) -> list[int]:
     rest = shares[:index] + shares[index + 1 :]
     if not rest:
         return []
+    if is_equal(shares):
+        return equal(len(rest))
     return largest_remainder([float(s) for s in rest])
 
 

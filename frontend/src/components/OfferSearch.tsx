@@ -24,8 +24,8 @@ export default function OfferSearch({ value, onChange, exclude = [], placeholder
 
   useEffect(() => {
     if (!open) return;
+    setLoading(true);
     const t = setTimeout(async () => {
-      setLoading(true);
       try {
         const query = value && text === label(value) ? "" : text;
         const res = await api.offers(query);
@@ -90,6 +90,7 @@ export default function OfferSearch({ value, onChange, exclude = [], placeholder
               {o.state && o.state !== "active" && <span className="tag">{o.state}</span>}
             </li>
           ))}
+          {loading && items.length > 0 && <li className="muted small">Поиск…</li>}
         </ul>
       )}
     </div>

@@ -65,18 +65,21 @@ def test_editor_add_remove(client, fake):
     # дубль
     assert client.post(f"/api/campaigns/{cid}/streams/{sid}/offers", json={"offer_id": 4}).status_code == 400
 
+    v = client.delete(f"/api/campaigns/{cid}/streams/{sid}/offers/3").json()
+    assert offers_of(v) == [(2, 50), (4, 50)]
+    v = client.post(f"/api/campaigns/{cid}/streams/{sid}/offers", json={"offer_id": 3}).json()
     v = client.delete(f"/api/campaigns/{cid}/streams/{sid}/offers/2").json()
-    assert offers_of(v) == [(3, 50), (4, 50)]
+    assert offers_of(v) == [(4, 50), (3, 50)]
     # изменения реально ушли в Keitaro
-    assert [(o["offer_id"], o["share"]) for o in fake.streams[sid]["offers"]] == [(3, 50), (4, 50)]
+    assert [(o["offer_id"], o["share"]) for o in fake.streams[sid]["offers"]] == [(4, 50), (3, 50)]
 
     v = client.put(f"/api/campaigns/{cid}/streams/{sid}/shares", json={"shares": {"3": 70, "4": 30}}).json()
-    assert offers_of(v) == [(3, 70), (4, 30)]
+    assert offers_of(v) == [(4, 30), (3, 70)]
     bad = client.put(f"/api/campaigns/{cid}/streams/{sid}/shares", json={"shares": {"3": 70, "4": 20}})
     assert bad.status_code == 400
 
     hist = client.get(f"/api/campaigns/{cid}/history").json()
-    assert [h["action"] for h in hist] == ["set_shares", "remove", "add", "add"]
+    assert [h["action"] for h in hist] == ["set_shares", "remove", "add", "remove", "add", "add"]
 
     view = client.get(f"/api/campaigns/{cid}").json()
     assert len(view["streams"]) == 2 and view["streams"][0]["filters"][0]["payload"] == ["AU"]
