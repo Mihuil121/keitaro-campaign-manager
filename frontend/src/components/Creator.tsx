@@ -20,6 +20,8 @@ export default function Creator({ onOpenEditor }: { onOpenEditor: () => void }) 
     if (meta) applyDefaults(meta);
   }, [meta, applyDefaults]);
 
+  const prefix = meta?.campaign_prefix ?? "";
+
   const edit = (id: number) => {
     openCampaign(id);
     onOpenEditor();
@@ -37,7 +39,15 @@ export default function Creator({ onOpenEditor }: { onOpenEditor: () => void }) 
         >
           <label>
             <span>Название</span>
-            <input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="имя кампании" />
+            <div className={prefix ? "prefixed" : ""}>
+              {prefix && <span className="prefix">{prefix}</span>}
+              <input
+                value={form.name}
+                onChange={(e) => setField("name", stripPrefix(e.target.value, prefix))}
+                placeholder={prefix ? "campaign1" : "имя кампании"}
+              />
+            </div>
+            {prefix && <small>Префикс добавляется автоматически (CAMPAIGN_PREFIX в .env)</small>}
           </label>
           <label>
             <span>Гео</span>
@@ -120,6 +130,11 @@ export default function Creator({ onOpenEditor }: { onOpenEditor: () => void }) 
       </section>
     </div>
   );
+}
+
+/** Если префикс вставили вместе с именем — не дублируем его в поле. */
+function stripPrefix(v: string, prefix: string) {
+  return prefix && v.toLowerCase().startsWith(prefix.toLowerCase()) ? v.slice(prefix.length) : v;
 }
 
 function RefSelect({

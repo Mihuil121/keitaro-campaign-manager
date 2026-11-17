@@ -25,6 +25,15 @@ def parse_geo(raw: str | list[str]) -> list[str]:
     return list(dict.fromkeys(codes))
 
 
+def with_prefix(name: str, prefix: str | None = None) -> str:
+    """Добавляет префикс (test_фамилия_), если его ещё нет."""
+    prefix = settings.campaign_prefix if prefix is None else prefix
+    name = name.strip()
+    if prefix and not name.lower().startswith(prefix.lower()):
+        name = prefix + name
+    return name
+
+
 def random_alias(n: int = 8) -> str:
     alphabet = string.ascii_letters + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(n))
@@ -89,6 +98,7 @@ async def meta(k: KeitaroClient) -> dict:
         "domains": [{"id": d["id"], "name": d.get("name")} for d in domains],
         "groups": [{"id": g["id"], "name": g.get("name")} for g in groups],
         "sources": [{"id": s["id"], "name": s.get("name")} for s in sources],
+        "campaign_prefix": settings.campaign_prefix,
         "defaults": {
             "domain_id": safe(domains, settings.default_domain, "Домен"),
             "group_id": safe(groups, settings.default_group, "Группа"),
@@ -128,9 +138,9 @@ async def create_campaign(
     group_id: int | None = None,
     traffic_source_id: int | None = None,
 ) -> CreatedCampaign:
-    name = name.strip()
-    if not name:
+    if not name.strip():
         raise ValueError("Название кампании пустое")
+    name = with_prefix(name)
     geo_codes = parse_geo(geo)
 
     m = await meta(k)

@@ -13,6 +13,8 @@ class Settings:
     default_domain: str = os.getenv("KEITARO_DEFAULT_DOMAIN", "")
     default_group: str = os.getenv("KEITARO_DEFAULT_GROUP", "")
     default_source: str = os.getenv("KEITARO_DEFAULT_SOURCE", "")
+    # префикс имён кампаний, напр. test_ivanov_
+    campaign_prefix: str = os.getenv("CAMPAIGN_PREFIX", "").strip()
     safe_redirect_url: str = os.getenv("SAFE_REDIRECT_URL", "https://google.com")
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
     cors_origins: tuple[str, ...] = tuple(

@@ -4,6 +4,7 @@ export type Meta = {
   domains: Ref[];
   groups: Ref[];
   sources: Ref[];
+  campaign_prefix: string;
   defaults: { domain_id: number | null; group_id: number | null; traffic_source_id: number | null };
 };
 

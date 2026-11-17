@@ -32,7 +32,9 @@ def client(fake, tmp_path, monkeypatch):
     monkeypatch.setattr(
         services,
         "settings",
-        config.Settings(default_group="FORTESTS", default_source="3", default_domain="in.posdk.xyz"),
+        config.Settings(
+            default_group="FORTESTS", default_source="3", default_domain="in.posdk.xyz", campaign_prefix="test_ivanov_"
+        ),
     )
     services.clear_cache()
     app.dependency_overrides[get_db] = _db

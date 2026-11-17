@@ -19,7 +19,7 @@ def test_create_campaign(client, fake):
     data = r.json()
     c = fake.campaigns[data["id"]]
     assert c["domain_id"] == 1 and c["group_id"] == 7 and c["traffic_source_id"] == 3
-    assert c["type"] == "position" and c["name"] == "Test camp"
+    assert c["type"] == "position" and c["name"] == "test_ivanov_Test camp"
     assert data["url"] == f"https://in.posdk.xyz/{c['alias']}"
 
     geo, offer = sorted(
@@ -32,6 +32,13 @@ def test_create_campaign(client, fake):
     assert [(o["offer_id"], o["share"]) for o in offer["offers"]] == [(2, 100)]
 
     assert client.get("/api/campaigns/created").json()[0]["id"] == data["id"]
+
+
+def test_prefix_not_duplicated(client, fake):
+    data = create(client, name="test_ivanov_campaign1").json()
+    assert fake.campaigns[data["id"]]["name"] == "test_ivanov_campaign1"
+    assert data["name"] == "test_ivanov_campaign1"
+    assert client.get("/api/meta").json()["campaign_prefix"] == "test_ivanov_"
 
 
 def test_create_validation(client):
@@ -94,4 +101,4 @@ def test_editor_rejects_redirect_stream(client):
 def test_campaign_list(client):
     create(client, name="Alpha")
     create(client, name="Beta")
-    assert [c["name"] for c in client.get("/api/campaigns", params={"q": "alp"}).json()] == ["Alpha"]
+    assert [c["name"] for c in client.get("/api/campaigns", params={"q": "alp"}).json()] == ["test_ivanov_Alpha"]

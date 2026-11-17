@@ -2,7 +2,7 @@
 
 Обёртка над [Keitaro Admin API](https://admin-api.docs.keitaro.io):
 
-1. **Создаватор кампаний** — по названию, гео и ID оффера создаёт кампанию с доменом, группой и источником и двумя потоками:
+1. **Создаватор кампаний** — по названию (к нему автоматически добавляется префикс `test_фамилия_` из `CAMPAIGN_PREFIX`), гео и ID оффера создаёт кампанию с доменом, группой и источником и двумя потоками:
    - поток 1 — фильтр «Страна = гео» → редирект на `https://google.com`;
    - поток 2 — «Лендинги и офферы» → выбранный оффер (100%).
 2. **Редактор кампании** — выбор любой кампании трекера, просмотр потоков, добавление и удаление офферов, ручная правка долей.
@@ -27,7 +27,7 @@ python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env                 # и вписать KEITARO_API_KEY
+cp .env.example .env                 # вписать KEITARO_API_KEY и свою фамилию в CAMPAIGN_PREFIX
 alembic upgrade head                 # создаёт таблицы (по умолчанию SQLite ./app.db)
 uvicorn app.main:app --reload --port 8000
 ```
@@ -54,6 +54,7 @@ Next.js проксирует `/api/*` на бэкенд (`API_URL`, по умо�
 | `KEITARO_URL` | адрес трекера, напр. `https://tlgk.host` |
 | `KEITARO_API_KEY` | ключ Admin API (заголовок `Api-Key`) |
 | `KEITARO_DEFAULT_DOMAIN` / `_GROUP` / `_SOURCE` | значения по умолчанию для создаватора — ID **или** имя (напр. `FORTESTS`). В UI их можно поменять |
+| `CAMPAIGN_PREFIX` | префикс имён кампаний по правилам теста: `test_фамилия_`. Добавляется к названию автоматически, если его ещё нет: `campaign1` → `test_ivanov_campaign1` |
 | `SAFE_REDIRECT_URL` | куда уводить трафик из гео (по умолчанию `https://google.com`) |
 | `DATABASE_URL` | SQLAlchemy URL. SQLite по умолчанию; для Postgres: `postgresql+psycopg://user:pass@host/db` (+ `pip install psycopg[binary]`) |
 | `CORS_ORIGINS` | если фронт ходит в API напрямую, а не через прокси Next |
