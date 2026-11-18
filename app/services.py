@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import secrets
@@ -66,21 +67,59 @@ def campaign_url(domain: dict | None, alias: str) -> str | None:
 
 # ---------------- кэш справочников ----------------
 
+# Keitaro отдаёт полный список офферов медленно (на боевом трекере ~15–20 с),
+# поэтому: прогрев при старте, stale-while-revalidate и один запрос на ключ.
 _cache: dict[str, tuple[float, list]] = {}
-CACHE_TTL = 60
+_locks: dict[str, asyncio.Lock] = {}
+_refreshing: set[str] = set()
+_bg_tasks: set[asyncio.Task] = set()
+CACHE_TTL = 300  # после этого отдаём старые данные и обновляем их в фоне
+
+
+async def _refresh(key: str, fetch) -> None:
+    try:
+        _cache[key] = (time.monotonic(), await fetch())
+    except Exception:
+        log.warning("Не удалось обновить кэш %s", key, exc_info=True)
+    finally:
+        _refreshing.discard(key)
 
 
 async def cached(key: str, fetch) -> list:
     hit = _cache.get(key)
-    if hit and time.monotonic() - hit[0] < CACHE_TTL:
+    if hit:
+        if time.monotonic() - hit[0] >= CACHE_TTL and key not in _refreshing:
+            _refreshing.add(key)
+            task = asyncio.create_task(_refresh(key, fetch))
+            _bg_tasks.add(task)
+            task.add_done_callback(_bg_tasks.discard)
         return hit[1]
-    data = await fetch()
-    _cache[key] = (time.monotonic(), data)
-    return data
+    # холодный кэш: параллельные запросы ждут один и тот же fetch
+    lock = _locks.setdefault(key, asyncio.Lock())
+    async with lock:
+        if key in _cache:
+            return _cache[key][1]
+        data = await fetch()
+        _cache[key] = (time.monotonic(), data)
+        return data
 
 
 def clear_cache() -> None:
     _cache.clear()
+
+
+async def warm(k: KeitaroClient) -> None:
+    """Прогрев справочников при старте, чтобы первый поиск офферов не ждал Keitaro."""
+    results = await asyncio.gather(
+        cached("domains", k.domains),
+        cached("groups", lambda: k.groups("campaigns")),
+        cached("sources", k.traffic_sources),
+        cached("offers", k.offers),
+        return_exceptions=True,
+    )
+    for r in results:
+        if isinstance(r, Exception):
+            log.warning("Прогрев кэша: %s", r)
 
 
 async def meta(k: KeitaroClient) -> dict:

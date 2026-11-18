@@ -19,6 +19,7 @@ export default function OfferSearch({ value, onChange, exclude = [], placeholder
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const reqId = useRef(0);
 
   useEffect(() => setText(value ? label(value) : ""), [value]);
 
@@ -26,17 +27,20 @@ export default function OfferSearch({ value, onChange, exclude = [], placeholder
     if (!open) return;
     setLoading(true);
     const t = setTimeout(async () => {
+      // ответы на старые запросы игнорируем — показываем только последний
+      const id = ++reqId.current;
       try {
         const query = value && text === label(value) ? "" : text;
         const res = await api.offers(query);
+        if (id !== reqId.current) return;
         setItems(res.filter((o) => !exclude.includes(o.id)));
         setActive(0);
       } catch {
-        setItems([]);
+        if (id === reqId.current) setItems([]);
       } finally {
-        setLoading(false);
+        if (id === reqId.current) setLoading(false);
       }
-    }, 200);
+    }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, open, exclude.join(",")]);
@@ -77,7 +81,7 @@ export default function OfferSearch({ value, onChange, exclude = [], placeholder
       />
       {open && (
         <ul className="ac-list">
-          {loading && items.length === 0 && <li className="muted">Загрузка…</li>}
+          {loading && items.length === 0 && <li className="muted">Загрузка офферов из Keitaro…</li>}
           {!loading && items.length === 0 && <li className="muted">Ничего не найдено</li>}
           {items.map((o, i) => (
             <li

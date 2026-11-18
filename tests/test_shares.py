@@ -35,3 +35,32 @@ def test_equal_stays_equal_after_remove():
 def test_zero_shares_fallback():
     assert sh.after_add([0, 0]) == [34, 33, 33]
     assert sum(sh.normalize([0, 0, 0])) == 100
+
+
+def test_cache_dedupes_and_serves_stale():
+    import asyncio
+    import time
+
+    from app import services
+
+    calls = 0
+
+    async def fetch():
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0.05)
+        return [calls]
+
+    async def run():
+        services.clear_cache()
+        # 5 параллельных холодных запросов → один fetch
+        res = await asyncio.gather(*(services.cached("x", fetch) for _ in range(5)))
+        assert calls == 1 and all(r == [1] for r in res)
+        # протухший кэш: сразу отдаём старое, обновляем в фоне
+        services._cache["x"] = (time.monotonic() - services.CACHE_TTL - 1, [1])
+        assert await services.cached("x", fetch) == [1]
+        await asyncio.sleep(0.1)
+        assert await services.cached("x", fetch) == [2]
+        services.clear_cache()
+
+    asyncio.run(run())

@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from fastapi import Depends, FastAPI, Request
@@ -17,7 +18,9 @@ from app.models import CreatedCampaign, OfferChange
 async def lifespan(app: FastAPI):
     if not getattr(app.state, "keitaro", None):
         app.state.keitaro = KeitaroClient()
+    warm = asyncio.create_task(services.warm(app.state.keitaro))
     yield
+    warm.cancel()
     await app.state.keitaro.close()
 
 
